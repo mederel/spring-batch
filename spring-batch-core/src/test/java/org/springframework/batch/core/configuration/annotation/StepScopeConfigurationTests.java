@@ -148,6 +148,13 @@ public class StepScopeConfigurationTests {
 		Callable<String> value = context.getBean(Callable.class);
 		assertEquals("STEP", value.call());
 	}
+	
+	@Test
+	public void testStepScopeAnnotationWithoutEnableBatchProcessing() throws Exception {
+		init(StepScopeConfigurationWithoutEnableBatchProcessing.class);
+		Callable value = context.getBean(Callable.class);
+		assertEquals("STEP", value.call());
+	}
 
 	public void init(Class<?>... config) throws Exception {
 		Class<?>[] configs = new Class<?>[config.length + 1];
@@ -294,6 +301,21 @@ public class StepScopeConfigurationTests {
 		@Override
 		public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
 			return RepeatStatus.FINISHED;
+		}
+	}
+	
+	@Configuration
+	public static class StepScopeConfigurationWithoutEnableBatchProcessing {
+		@Bean
+		public static org.springframework.batch.core.scope.StepScope stepScope() {
+			return new org.springframework.batch.core.scope.StepScope();
+		}
+		
+		@Bean
+		@StepScope
+		protected Callable<String> value(@Value("#{stepExecution.stepName}")
+		final String value) {
+			return new SimpleCallable(value);
 		}
 	}
 }

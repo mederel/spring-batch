@@ -26,6 +26,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.Scope;
 import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 import org.springframework.util.StringValueResolver;
@@ -127,6 +128,9 @@ public abstract class BatchScopeSupport implements Scope, BeanFactoryPostProcess
 				scopifier.visitBeanDefinition(definition);
 
 				if (scoped && !definition.isAbstract()) {
+					if (beanFactory instanceof DefaultListableBeanFactory) {
+						((DefaultListableBeanFactory)beanFactory).removeBeanDefinition(beanName);
+					}
 					createScopedProxy(beanName, definition, registry, proxyTargetClass);
 				}
 			}
@@ -139,7 +143,7 @@ public abstract class BatchScopeSupport implements Scope, BeanFactoryPostProcess
 	 * after the {@link StepContext} is available. Amounts to adding
 	 * &lt;aop-auto-proxy/&gt; to a step scoped bean.
 	 *
-	 * @param beanName the bean name to replace
+	 * @param targetProxyBeanName the bean name to replace
 	 * @param definition the bean definition to replace
 	 * @param registry the enclosing {@link BeanDefinitionRegistry}
 	 * @param proxyTargetClass true if we need to force use of dynamic
@@ -148,15 +152,14 @@ public abstract class BatchScopeSupport implements Scope, BeanFactoryPostProcess
 	 * target. Caller should register it if needed to be visible at top level in
 	 * bean factory.
 	 */
-	protected static BeanDefinitionHolder createScopedProxy(String beanName, BeanDefinition definition,
+	protected static BeanDefinitionHolder createScopedProxy(String targetProxyBeanName, BeanDefinition definition,
 			BeanDefinitionRegistry registry, boolean proxyTargetClass) {
-
 		BeanDefinitionHolder proxyHolder;
 
-		proxyHolder = ScopedProxyUtils.createScopedProxy(new BeanDefinitionHolder(definition, beanName), registry,
+		proxyHolder = ScopedProxyUtils.createScopedProxy(new BeanDefinitionHolder(definition, targetProxyBeanName), registry,
 				proxyTargetClass);
 
-		registry.registerBeanDefinition(beanName, proxyHolder.getBeanDefinition());
+		registry.registerBeanDefinition(targetProxyBeanName, proxyHolder.getBeanDefinition());
 
 		return proxyHolder;
 
